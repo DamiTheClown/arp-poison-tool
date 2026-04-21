@@ -1,6 +1,6 @@
 # main.py
-from network_utils import scan_network, select_target, toggle_forwarding
-from spoofer_logic import spoof
+from .network_utils import scan_network, select_target, toggle_forwarding
+from .spoofer_logic import spoof
 
 def main():
     # 1. Sken sítě
