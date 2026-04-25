@@ -7,6 +7,9 @@ import os
 
 devices = []
 
+def get_interface():
+    return conf.iface
+
 print("[red][-] Invalid choice.")
 # --- scan sítě --- #
 def scan_network():

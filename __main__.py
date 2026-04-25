@@ -1,6 +1,6 @@
 from rich.console import Console
 from rich.text import Text
-from .network_utils import scan_network, select_target, toggle_forwarding, get_router
+from .network_utils import scan_network, select_target, toggle_forwarding, get_router, get_interface
 from .spoofer_logic import spoof
 import os
 
@@ -35,6 +35,7 @@ def main():
     scan_network()
 
     target_ip, target_mac = select_target()
+    interface = get_interface()
 
     if not target_ip:
         print("[red][-] No target selected. Exiting.")
